@@ -420,16 +420,17 @@ class LookupService() {
 			}
 
 			// get country
-			record.countryCode = countryCode(LookupService.unsignedByteToInt(record_buf(0)))
-			record.countryName = countryName(LookupService.unsignedByteToInt(record_buf(0)))
+			record = record.copy(
+			    countryCode = countryCode(LookupService.unsignedByteToInt(record_buf(0))),
+			    countryName = countryName(LookupService.unsignedByteToInt(record_buf(0))))
 			record_buf_offset += 1;
 
 			// get region
 			while (record_buf(record_buf_offset + str_length) != '\0')
 				str_length += 1;
 			if (str_length > 0) {
-				record.region =
-				        new String(record_buf, record_buf_offset, str_length);
+				record = record.copy(region =
+				        new String(record_buf, record_buf_offset, str_length))
 			}
 			record_buf_offset += str_length + 1;
 			str_length = 0;
@@ -438,9 +439,9 @@ class LookupService() {
 			while (record_buf(record_buf_offset + str_length) != '\0')
 				str_length += 1;
 			if (str_length > 0) {
-				record.city =
+				record = record.copy(city =
 				        new String(record_buf, record_buf_offset, str_length,
-				                "ISO-8859-1");
+				                "ISO-8859-1"))
 			}
 			record_buf_offset += str_length + 1;
 			str_length = 0;
@@ -449,8 +450,8 @@ class LookupService() {
 			while (record_buf(record_buf_offset + str_length) != '\0')
 				str_length += 1;
 			if (str_length > 0) {
-				record.postalCode =
-				        new String(record_buf, record_buf_offset, str_length);
+				record = record.copy(postalCode =
+				        new String(record_buf, record_buf_offset, str_length))
 			}
 			record_buf_offset += str_length + 1;
 
@@ -459,7 +460,7 @@ class LookupService() {
 				latitude +=
 				        (LookupService.unsignedByteToInt(record_buf(record_buf_offset + j)) << (j * 8));
 			}
-			record.latitude = (latitude / 10000f).toFloat - 180f;
+			record = record.copy(latitude = (latitude / 10000f).toFloat - 180f)
 			record_buf_offset += 3;
 
 			// get longitude
@@ -467,11 +468,11 @@ class LookupService() {
 				longitude +=
 				        (LookupService.unsignedByteToInt(record_buf(record_buf_offset + j)) << (j * 8));
 			}
-			record.longitude = (longitude / 10000f).toFloat - 180f;
-
-			record.dma_code = 0
-			record.metro_code = 0;
-			record.area_code = 0;
+			record = record.copy(
+			    longitude = (longitude / 10000f).toFloat - 180f,
+			    dmaCode = 0,
+			    metroCode = 0,
+			    areaCode = 0)
 			if (databaseType == DatabaseInfo.CITY_EDITION_REV1) {
 				// get DMA code
 				var metroarea_combo = 0;
@@ -482,9 +483,10 @@ class LookupService() {
 						        (LookupService.unsignedByteToInt(record_buf(record_buf_offset
 						                + j)) << (j * 8));
 					}
-					record.metro_code = metroarea_combo / 1000
-					record.dma_code = metroarea_combo / 1000;
-					record.area_code = metroarea_combo % 1000;
+					record = record.copy(
+					    metroCode = metroarea_combo / 1000,
+						dmaCode = metroarea_combo / 1000,
+						areaCode = metroarea_combo % 1000)
 				}
 			}
 		} catch {
@@ -541,7 +543,7 @@ class LookupService() {
 
 	def getLocationwithdnsservice(str:String):Location = {
 	    import java.util.StringTokenizer
-		val record = new Location()
+		var record = new Location()
 		val st = new StringTokenizer(str, ";=\"");
 		while (st.hasMoreTokens()) {
 			val key = st.nextToken();
@@ -556,25 +558,27 @@ class LookupService() {
 
 			key match {
 			  case "co" =>
-				record.countryCode = value;
-				record.countryName = countryName(hashmapcountryCodetoindex.get(value))
+				record = record.copy(
+				  countryCode = value,
+				  countryName = countryName(hashmapcountryCodetoindex.get(value)))
 			  case "ci" =>
-				record.city = value;
+				record = record.copy(city = value)
 			  case "re" =>
-				record.region = value;
+				record = record.copy(region = value)
 			  case "zi" =>
-				record.postalCode = value;
+				record = record.copy(postalCode = value)
 			  case "la" =>
 			    val v = asFloat(value)
-			    record.latitude = v
+			    record = record.copy(latitude = v)
 			  case "lo" =>
-					record.longitude = asFloat(value)
+				record = record.copy(longitude = asFloat(value))
 			  case "dm" | "me" =>
 				val v = asInt(value)
-			    record.metro_code = v
-			    record.dma_code = v
+			    record = record.copy(
+			        metroCode = v,
+			    	dmaCode = v)
 			  case "ac" =>
-				record.area_code = asInt(value);
+				record = record.copy(areaCode = asInt(value))
 			}
 		}
 		return record;
